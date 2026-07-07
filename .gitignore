@@ -12,6 +12,9 @@ src-tauri/target
 src-tauri/binaries/*
 !src-tauri/binaries/.gitkeep
 
+# vercel (local project link / credentials)
+.vercel
+
 # editor / os
 .DS_Store
 *.log
