@@ -28,10 +28,8 @@ jobs:
         include:
           # Each runner builds natively, so the pkg'd Node sidecar's target
           # triple matches the host (no cross-compilation of the sidecar).
-          - platform: macos-latest # Apple Silicon (aarch64)
+          - platform: macos-latest # Apple Silicon (aarch64); runs on Intel via Rosetta
             target: aarch64-apple-darwin
-          - platform: macos-13 # Intel (x86_64) — no "latest" Intel image exists
-            target: x86_64-apple-darwin
           - platform: ubuntu-latest # Linux x86_64
             target: x86_64-unknown-linux-gnu
           - platform: windows-latest # Windows x86_64
