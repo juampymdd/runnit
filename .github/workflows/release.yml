@@ -28,11 +28,11 @@ jobs:
         include:
           # Each runner builds natively, so the pkg'd Node sidecar's target
           # triple matches the host (no cross-compilation of the sidecar).
-          - platform: macos-14 # Apple Silicon (aarch64)
+          - platform: macos-latest # Apple Silicon (aarch64)
             target: aarch64-apple-darwin
-          - platform: macos-13 # Intel (x86_64)
+          - platform: macos-13 # Intel (x86_64) — no "latest" Intel image exists
             target: x86_64-apple-darwin
-          - platform: ubuntu-22.04 # Linux x86_64
+          - platform: ubuntu-latest # Linux x86_64
             target: x86_64-unknown-linux-gnu
           - platform: windows-latest # Windows x86_64
             target: x86_64-pc-windows-msvc
@@ -47,7 +47,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             libgtk-3-dev \
