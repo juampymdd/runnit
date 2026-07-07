@@ -1,0 +1,98 @@
+name: release
+
+# Builds runnit for Windows, macOS (Apple Silicon + Intel) and Linux, then
+# attaches the installers to a (draft) GitHub Release.
+#
+# Trigger by pushing a version tag:   git tag v0.1.0 && git push origin v0.1.0
+# or run manually from the Actions tab (provide the tag).
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0)"
+        required: true
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Each runner builds natively, so the pkg'd Node sidecar's target
+          # triple matches the host (no cross-compilation of the sidecar).
+          - platform: macos-14 # Apple Silicon (aarch64)
+            target: aarch64-apple-darwin
+          - platform: macos-13 # Intel (x86_64)
+            target: x86_64-apple-darwin
+          - platform: ubuntu-22.04 # Linux x86_64
+            target: x86_64-unknown-linux-gnu
+          - platform: windows-latest # Windows x86_64
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            build-essential \
+            file \
+            libssl-dev
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install sidecar dependencies
+        run: pnpm -C sidecar install --frozen-lockfile
+
+      # tauri-action runs `beforeBuildCommand` (pnpm sidecar:build && pnpm build)
+      # which pkg-compiles the sidecar for this runner's target, then bundles.
+      - name: Build & release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: "runnit ${{ github.event.inputs.tag || github.ref_name }}"
+          releaseBody: "See the assets below to download and install runnit."
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}
