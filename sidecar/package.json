@@ -1,0 +1,31 @@
+{
+  "name": "runnit-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Persistent Node evaluator for runnit. Reads JSON-per-line on stdin, runs code in a fresh vm inside a terminable worker, returns per-line results + captured console output.",
+  "bin": "index.js",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.26.3",
+    "@babel/parser": "^7.26.3",
+    "@babel/types": "^7.26.3",
+    "source-map": "0.6.1"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.3.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "pkg": {
+    "targets": ["node22"],
+    "assets": [
+      "worker-src.js",
+      "node_modules/@babel/**/*",
+      "node_modules/source-map/**/*"
+    ]
+  }
+}

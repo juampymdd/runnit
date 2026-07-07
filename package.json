@@ -1,0 +1,44 @@
+{
+  "name": "runnit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A live JavaScript/TypeScript playground desktop app (RunJS-style) built with Tauri 2.",
+  "packageManager": "pnpm@10.28.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "sidecar:install": "pnpm -C sidecar install",
+    "sidecar:build": "pnpm -C sidecar build",
+    "icons": "tauri icon src-tauri/icons/icon.png",
+    "dev:desktop": "pnpm sidecar:build && tauri dev",
+    "build:desktop": "pnpm sidecar:build && tauri build"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "esbuild-wasm": "^0.28.1",
+    "monaco-editor": "^0.55.1",
+    "motion": "^12.42.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^26.1.0",
+    "esbuild": "^0.28.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3"
+  }
+}
