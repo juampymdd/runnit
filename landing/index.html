@@ -520,12 +520,22 @@
           navigator.platform ||
           ""
         ).toLowerCase();
+        const touch = navigator.maxTouchPoints || 0;
+        // Mobile / tablet: no desktop build applies. Check FIRST — iPhone/iPad UA
+        // contains "Mac OS X", and iPadOS reports as "MacIntel" in desktop mode.
+        if (
+          /iphone|ipad|ipod/i.test(ua) ||
+          /android/i.test(ua) ||
+          (plat === "macintel" && touch > 1)
+        ) {
+          return { os: null, arch: null, mobile: true };
+        }
         let os = null;
         if (/win/.test(plat) || /windows/i.test(ua)) os = "windows";
         else if (/mac/.test(plat) || /mac os x/i.test(ua)) os = "macos";
         else if (/linux/.test(plat) || /linux|x11/i.test(ua)) os = "linux";
         const arch = os === "macos" ? "arm64" : "x64";
-        return { os, arch };
+        return { os, arch, mobile: false };
       }
 
       function fmtSize(bytes) {
@@ -579,9 +589,13 @@
             (d.os === "macos" ? " · Apple Silicon (Intel Macs run it via Rosetta)" : "");
         } else {
           btn.href = RELEASES_URL;
-          label.textContent = "View releases";
+          label.textContent = d.mobile ? "View downloads" : "View releases";
           archEl.textContent = "";
-          detectedEl.textContent = d.os ? "No build detected for your platform yet." : "";
+          detectedEl.textContent = d.mobile
+            ? "runnit is a desktop app — open this page on macOS, Windows or Linux to install."
+            : d.os
+            ? "No build detected for your platform yet."
+            : "";
         }
 
         grid.innerHTML = "";
