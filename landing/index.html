@@ -1,6 +1,10 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" class="no-js">
   <head>
+    <script>
+      document.documentElement.classList.remove("no-js");
+      document.documentElement.classList.add("js");
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>runnit — a live JS/TS playground</title>
@@ -26,9 +30,14 @@
         --green: #7ee2b8;
         --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         --mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; }
+      @media (prefers-reduced-motion: no-preference) {
+        html { scroll-behavior: smooth; }
+      }
       body {
         font-family: var(--font);
         background:
@@ -53,7 +62,18 @@
       .ghlink:hover { color: var(--text); border-color: var(--faint); background: var(--bg-soft); }
       .ghlink .lucide { font-size: 15px; }
 
-      .hero { text-align: center; padding: 52px 0 8px; }
+      .hero { text-align: center; padding: 52px 0 8px; position: relative; }
+      .hero > *:not(#hero-fx) { position: relative; z-index: 1; }
+      /* LetterGlitch backdrop (brand-muted, masked for readability) */
+      #hero-fx { position: absolute; inset: -70px -24px 0; z-index: 0; overflow: hidden;
+        opacity: 0.55; pointer-events: none; border-radius: 24px;
+        -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 68%, transparent);
+        mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 68%, transparent); }
+      #hero-fx canvas { display: block; width: 100%; height: 100%; }
+      .hero-vig-outer { position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(circle, rgba(11, 14, 18, 0) 52%, rgba(11, 14, 18, 1) 100%); }
+      .hero-vig-center { position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(circle, rgba(11, 14, 18, 0.88) 0%, rgba(11, 14, 18, 0) 62%); }
       .hero .logo-big { width: 100px; height: 100px; margin: 0 auto 28px; display: block;
         filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55)); }
       .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--dim);
@@ -72,6 +92,7 @@
         font-size: 16.5px; padding: 15px 26px; border-radius: 13px; transition: transform 0.18s, box-shadow 0.18s;
         box-shadow: 0 10px 30px -8px rgba(46, 125, 246, 0.5); }
       .primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px rgba(46, 125, 246, 0.6); }
+      .primary:active { transform: translateY(0) scale(0.98); transition-duration: 0.12s; }
       .primary .lucide { font-size: 19px; }
       .primary .arch { font-weight: 500; opacity: 0.72; font-size: 13.5px; }
       .detected { color: var(--faint); font-size: 13px; min-height: 18px; }
@@ -110,7 +131,10 @@
       .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;
         margin: 64px 0 40px; }
       .feat { border: 1px solid var(--border); background: linear-gradient(180deg, var(--bg-soft), transparent);
-        border-radius: 16px; padding: 22px; }
+        border-radius: 16px; padding: 22px; transition: transform 0.25s var(--ease-out), border-color 0.25s var(--ease-out); }
+      @media (hover: hover) and (pointer: fine) {
+        .feat:hover { transform: translateY(-3px); border-color: var(--faint); }
+      }
       .feat .ic { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
         border-radius: 11px; background: rgba(46, 125, 246, 0.12); color: var(--blue); font-size: 20px;
         margin-bottom: 14px; }
@@ -130,6 +154,69 @@
       .note { text-align: center; color: var(--faint); font-size: 13px; margin-top: 16px; }
       .note a { color: var(--dim); }
       code.tag { font-family: var(--mono); color: var(--yellow); }
+
+      /* ---- scroll reveal (only when JS is on; no-JS keeps everything visible) ---- */
+      html.js .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(6px);
+        transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out),
+          filter 0.6s var(--ease-out);
+        transition-delay: var(--d, 0ms);
+        will-change: opacity, transform;
+      }
+      html.js .reveal.in { opacity: 1; transform: none; filter: none; }
+
+      /* ---- hero load stagger ---- */
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(16px); filter: blur(6px); }
+        to { opacity: 1; transform: none; filter: none; }
+      }
+      .hero .logo-big { animation: rise 0.7s var(--ease-out) both; }
+      .hero .pill { animation: rise 0.7s var(--ease-out) 0.07s both; }
+      .hero h1 { animation: rise 0.75s var(--ease-out) 0.14s both; }
+      .hero .sub { animation: rise 0.75s var(--ease-out) 0.22s both; }
+      .cta { animation: rise 0.75s var(--ease-out) 0.32s both; }
+
+      /* feature card stagger */
+      .features .feat:nth-child(2) { --d: 90ms; }
+      .features .feat:nth-child(3) { --d: 180ms; }
+
+      /* ---- preview: rows type in when panel enters ---- */
+      html.js .pv-body .row {
+        opacity: 0;
+        transform: translateX(-8px);
+        transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+        transition-delay: var(--rd, 0ms);
+      }
+      html.js .preview.in .pv-body .row { opacity: 1; transform: none; }
+      html.js .preview.in .pv-body .row:nth-child(1) { --rd: 120ms; }
+      html.js .preview.in .pv-body .row:nth-child(2) { --rd: 200ms; }
+      html.js .preview.in .pv-body .row:nth-child(3) { --rd: 280ms; }
+      html.js .preview.in .pv-body .row:nth-child(4) { --rd: 360ms; }
+      html.js .preview.in .pv-body .row:nth-child(5) { --rd: 440ms; }
+      html.js .preview.in .pv-body .row:nth-child(6) { --rd: 520ms; }
+
+      /* ---- reduced motion: keep gentle opacity fades, drop movement + blur ---- */
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        html.js .reveal {
+          transform: none !important;
+          filter: none !important;
+          transition: opacity 0.5s ease !important;
+        }
+        html.js .pv-body .row {
+          transform: none !important;
+          transition: opacity 0.4s ease !important;
+        }
+        .hero .logo-big, .hero .pill, .hero h1, .hero .sub, .cta {
+          animation-name: fadeOnly;
+        }
+      }
+      @keyframes fadeOnly {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
     </style>
   </head>
   <body>
@@ -159,6 +246,11 @@
       </header>
 
       <section class="hero">
+        <div id="hero-fx" aria-hidden="true">
+          <canvas id="glitch"></canvas>
+          <div class="hero-vig-outer"></div>
+          <div class="hero-vig-center"></div>
+        </div>
         <svg class="logo-big" viewBox="0 0 32 32" fill="none" aria-label="runnit">
           <rect x="1" y="1" width="30" height="30" rx="8.5" fill="#12151c" />
           <rect x="1" y="1" width="30" height="30" rx="8.5" fill="none" stroke="#252b36" />
@@ -183,7 +275,7 @@
       </section>
 
       <!-- editor preview -->
-      <section class="preview" aria-hidden="true">
+      <section class="preview reveal" aria-hidden="true">
         <div class="pv-bar">
           <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
           <span class="name">playground.ts</span>
@@ -199,30 +291,30 @@
       </section>
 
       <section class="others">
-        <h3 class="sec-title">Download for your platform</h3>
-        <div class="grid" id="platform-grid"></div>
+        <h3 class="sec-title reveal">Download for your platform</h3>
+        <div class="grid reveal" id="platform-grid"></div>
         <div class="note" id="note"></div>
       </section>
 
       <section class="features">
-        <div class="feat">
+        <div class="feat reveal">
           <span class="ic"><svg class="lucide" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span>
           <h4>Live results</h4>
           <p>Every top-level expression shows its value inline, RunJS-style, as you type — no run button.</p>
         </div>
-        <div class="feat">
+        <div class="feat reveal">
           <span class="ic"><svg class="lucide" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></svg></span>
           <h4>Modules that work</h4>
           <p>Import Node builtins or any npm package — missing ones auto-install with a progress indicator.</p>
         </div>
-        <div class="feat">
+        <div class="feat reveal">
           <span class="ic"><svg class="lucide" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
           <h4>Sandboxed &amp; safe</h4>
           <p>Each run is isolated with a 3s timeout, so an infinite loop never freezes the app.</p>
         </div>
       </section>
 
-      <footer>
+      <footer class="reveal">
         <a class="madcodes" href="https://juampymad.com" target="_blank" rel="noopener">
           <span class="by">Built by</span>
           <svg class="wordmark" viewBox="0 0 6588 1004" role="img" aria-label="MadCodes">
@@ -245,6 +337,144 @@
     </div>
 
     <script>
+      // LetterGlitch hero backdrop — vanilla canvas port, brand-muted colors
+      (function () {
+        const canvas = document.getElementById("glitch");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const glitchColors = ["#a68526", "#2f5fa8", "#4ea587"]; // dim yellow / blue / green
+        const glitchSpeed = 60;
+        const smooth = true;
+        const chars = Array.from(
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789"
+        );
+        const fontSize = 16, charWidth = 10, charHeight = 20;
+
+        let letters = [], columns = 0, rows = 0, last = performance.now(), raf = 0;
+
+        const rndChar = () => chars[Math.floor(Math.random() * chars.length)];
+        const rndColor = () => glitchColors[Math.floor(Math.random() * glitchColors.length)];
+
+        function hexToRgb(hex) {
+          const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+          return r
+            ? { r: parseInt(r[1], 16), g: parseInt(r[2], 16), b: parseInt(r[3], 16) }
+            : null;
+        }
+        function lerp(a, b, f) {
+          return `rgb(${Math.round(a.r + (b.r - a.r) * f)}, ${Math.round(
+            a.g + (b.g - a.g) * f
+          )}, ${Math.round(a.b + (b.b - a.b) * f)})`;
+        }
+        function init(c, r) {
+          columns = c;
+          rows = r;
+          letters = Array.from({ length: c * r }, () => ({
+            char: rndChar(),
+            color: rndColor(),
+            targetColor: rndColor(),
+            progress: 1,
+          }));
+        }
+        function resize() {
+          const parent = canvas.parentElement;
+          if (!parent) return;
+          const rect = parent.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) return;
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+          canvas.style.width = rect.width + "px";
+          canvas.style.height = rect.height + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          init(Math.ceil(rect.width / charWidth), Math.ceil(rect.height / charHeight));
+          draw();
+        }
+        function draw() {
+          if (!letters.length) return;
+          const rect = canvas.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          ctx.font = `${fontSize}px monospace`;
+          ctx.textBaseline = "top";
+          for (let i = 0; i < letters.length; i++) {
+            const l = letters[i];
+            const x = (i % columns) * charWidth;
+            const y = Math.floor(i / columns) * charHeight;
+            ctx.fillStyle = l.color;
+            ctx.fillText(l.char, x, y);
+          }
+        }
+        function update() {
+          const n = Math.max(1, Math.floor(letters.length * 0.05));
+          for (let i = 0; i < n; i++) {
+            const idx = Math.floor(Math.random() * letters.length);
+            const l = letters[idx];
+            if (!l) continue;
+            l.char = rndChar();
+            l.targetColor = rndColor();
+            if (!smooth) {
+              l.color = l.targetColor;
+              l.progress = 1;
+            } else {
+              l.progress = 0;
+            }
+          }
+        }
+        function smoothStep() {
+          let redraw = false;
+          for (const l of letters) {
+            if (l.progress < 1) {
+              l.progress = Math.min(1, l.progress + 0.05);
+              const a = hexToRgb(l.color), b = hexToRgb(l.targetColor);
+              if (a && b) {
+                l.color = lerp(a, b, l.progress);
+                redraw = true;
+              }
+            }
+          }
+          if (redraw) draw();
+        }
+        function animate() {
+          const now = performance.now();
+          if (now - last >= glitchSpeed) {
+            update();
+            draw();
+            last = now;
+          }
+          if (smooth) smoothStep();
+          raf = requestAnimationFrame(animate);
+        }
+
+        resize();
+        animate(); // decorative brand centerpiece — always animates
+
+        let t;
+        window.addEventListener("resize", () => {
+          clearTimeout(t);
+          t = setTimeout(() => {
+            cancelAnimationFrame(raf);
+            resize();
+            animate();
+          }, 100);
+        });
+      })();
+
+      // scroll-reveal: fade + slide + unblur as elements enter the viewport
+      const revealObserver = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              e.target.classList.add("in");
+              revealObserver.unobserve(e.target);
+            }
+          }
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+      );
+      document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
+
       const OWNER = "juampymdd";
       const REPO = "runnit";
       const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
@@ -333,9 +563,11 @@
         }
 
         grid.innerHTML = "";
+        let ci = 0;
         for (const os of ["windows", "macos", "linux"]) {
           const card = document.createElement("div");
-          card.className = "card";
+          card.className = "card reveal";
+          card.style.setProperty("--d", ci++ * 80 + "ms");
           const links = buckets[os]
             .map(
               (a) =>
@@ -348,6 +580,7 @@
             `<div class="os">${OS_ICON[os]}${OS_NAME[os]}</div>` +
             (links || '<div class="empty">No build yet</div>');
           grid.appendChild(card);
+          revealObserver.observe(card);
         }
       }
 
