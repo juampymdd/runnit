@@ -1,6 +1,6 @@
 {
   "name": "runnit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "A live JavaScript/TypeScript playground desktop app (RunJS-style) built with Tauri 2.",
