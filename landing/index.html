@@ -406,14 +406,24 @@
         const glitchColors = ["#a68526", "#2f5fa8", "#4ea587"]; // dim yellow / blue / green
         const glitchSpeed = 60;
         const smooth = true;
-        const chars = Array.from(
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789"
-        );
+        // JS/TS tokens stamped into the grid so the backdrop reads like code.
+        const tokens = [
+          "const", "let", "var", "function", "return", "async", "await",
+          "import", "export", "from", "default", "type", "interface", "enum",
+          "class", "extends", "implements", "public", "private", "readonly",
+          "void", "null", "undefined", "true", "false", "new", "yield",
+          "typeof", "instanceof", "keyof", "infer", "never", "unknown", "any",
+          "string", "number", "boolean", "Promise", "Array", "Record",
+          "=>", "===", "!==", "&&", "||", "??", "?.", "...", "?:", ":=",
+          ".map(", ".filter(", ".reduce(", ".then(", "() =>", "{}", "[]", "</>",
+          "console.log", "JSON", "Math", "try", "catch", "throw", "if", "else",
+          "for", "of", "in", "as", "satisfies", "=>{", "});", "`${", "}`",
+        ];
         const fontSize = 16, charWidth = 10, charHeight = 20;
 
         let letters = [], columns = 0, rows = 0, last = performance.now(), raf = 0;
 
-        const rndChar = () => chars[Math.floor(Math.random() * chars.length)];
+        const rndToken = () => tokens[Math.floor(Math.random() * tokens.length)];
         const rndColor = () => glitchColors[Math.floor(Math.random() * glitchColors.length)];
 
         function hexToRgb(hex) {
@@ -430,12 +440,25 @@
         function init(c, r) {
           columns = c;
           rows = r;
-          letters = Array.from({ length: c * r }, () => ({
-            char: rndChar(),
+          letters = new Array(c * r);
+          const cell = (ch) => ({
+            char: ch,
             color: rndColor(),
             targetColor: rndColor(),
             progress: 1,
-          }));
+          });
+          // Fill each row left-to-right with tokens separated by a space,
+          // clipping the last token at the row edge.
+          for (let row = 0; row < r; row++) {
+            let col = 0;
+            while (col < c) {
+              const tok = rndToken();
+              for (let k = 0; k < tok.length && col < c; k++, col++) {
+                letters[row * c + col] = cell(tok[k]);
+              }
+              if (col < c) letters[row * c + col++] = cell(" "); // gap
+            }
+          }
         }
         function resize() {
           const parent = canvas.parentElement;
@@ -466,12 +489,10 @@
           }
         }
         function update() {
-          const n = Math.max(1, Math.floor(letters.length * 0.05));
-          for (let i = 0; i < n; i++) {
-            const idx = Math.floor(Math.random() * letters.length);
+          const stamp = (idx, ch) => {
             const l = letters[idx];
-            if (!l) continue;
-            l.char = rndChar();
+            if (!l) return;
+            l.char = ch;
             l.targetColor = rndColor();
             if (!smooth) {
               l.color = l.targetColor;
@@ -479,6 +500,18 @@
             } else {
               l.progress = 0;
             }
+          };
+          // Flip a handful of tokens per tick, each into a random row slot.
+          const n = Math.max(1, Math.floor((columns * rows) * 0.02 / 5));
+          for (let i = 0; i < n; i++) {
+            const row = Math.floor(Math.random() * rows);
+            const startCol = Math.floor(Math.random() * columns);
+            const tok = rndToken();
+            let col = startCol;
+            for (let k = 0; k < tok.length && col < columns; k++, col++) {
+              stamp(row * columns + col, tok[k]);
+            }
+            if (col < columns) stamp(row * columns + col, " "); // trailing gap
           }
         }
         function smoothStep() {
